@@ -10,7 +10,7 @@ public class moviecontroler : MonoBehaviour
     [Header("移動速度"), Range(0, 500)]
     public float speed = 3.5f;
     [Header("跳躍高度"), Range(0, 1500)]
-    public float jump = 10f;
+    public float jump = 30f;
     [Header("檢查地板尺寸與位移")]
     [Range(0, 1)]
     public float checkGroundRadius = 0.1f;
@@ -18,13 +18,23 @@ public class moviecontroler : MonoBehaviour
     [Header("跳躍按鍵與可跳躍圖層")]
     public KeyCode keyjump = KeyCode.Space;
     public LayerMask canJumpLayer;
+    [Header("動畫參數 : 走路與跳躍")]
+    public string parameterWalk = "開關走路";
+    public string parameterJump = "開關跳躍";
     #endregion
 
+
+    #region 私人
+    private Animator ani;
     ///<summary> 
     ///剛體元件 Rigidboby 2D
     ///</summary> 
     private Rigidbody2D rig;
+    [SerializeField]
+    private bool isGrounded;
+    #endregion
 
+    #region 事件
     /// <summary>
     /// 繪製圖示
     /// 在Unity繪製輔助用圖示
@@ -43,14 +53,13 @@ public class moviecontroler : MonoBehaviour
 
     }
 
-
-
     private void Start()
     {
         //剛體欄位 = 取得元件<2D 剛體>()
         rig = GetComponent<Rigidbody2D>();
+        ani = GetComponent<Animator>();
     }
-
+   
     /// <summary>
     /// Update 約 60 FPS
     /// 固定更新事件 : 50 FPS
@@ -64,7 +73,10 @@ public class moviecontroler : MonoBehaviour
     private void Update()
     {
         Flip();
+        CheckGround();
+        Jump();
     }
+    #endregion
 
     #region 方法
     /// <summary>
@@ -75,10 +87,13 @@ public class moviecontroler : MonoBehaviour
     {
         //h 值 指定為 輸入.取得軸向(水平軸)-水平軸代表作右鍵與A、D
         float h = Input.GetAxis("Horizontal");
-        print("玩家左右按鍵值:" + h);
+        //print("玩家左右按鍵值:" + h);
 
         //剛體元件.加速度=新 二維向量(h值*移動速度，加速度.垂直)；
         rig.velocity = new Vector2(h * speed, rig.velocity.y);
+
+
+        ani.SetBool(parameterWalk, h != 0);
     }
 
     ///<summary>
@@ -97,6 +112,26 @@ public class moviecontroler : MonoBehaviour
         else if (h < 0)
         {
             transform.eulerAngles = Vector3.zero;
+        }
+    }
+   
+
+
+    private void CheckGround()
+    {
+        Collider2D hit = Physics2D.OverlapCircle(transform.position +
+                  transform.TransformDirection(checkGroundoffset), checkGroundRadius, canJumpLayer);
+        //print("碰到的物件名稱:" + hit.name);
+        isGrounded = hit;
+
+        ani.SetBool(parameterJump, !isGrounded);
+   
+    }
+    private void Jump()
+    {
+        if (isGrounded && Input.GetKeyDown(keyjump))
+        {
+            rig.AddForce(new Vector2(0, jump));
         }
     }
     #endregion
